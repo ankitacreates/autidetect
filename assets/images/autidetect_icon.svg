@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <!-- Circle background -->
+  <circle cx="256" cy="256" r="256" fill="#141B41"/>
+  
+  <!-- Inner circle with gradient -->
+  <circle cx="256" cy="256" r="240" fill="#306BAC"/>
+  
+  <!-- Brain outline -->
+  <g transform="translate(106, 106) scale(1.2)">
+    <!-- Brain outline path -->
+    <path d="M125,50 
+             C105,30 75,25 55,45 
+             C35,25 5,30 0,60 
+             C-5,90 5,110 25,125
+             C5,145 10,180 35,190
+             C45,215 75,220 95,205
+             C110,220 140,225 160,205
+             C185,215 205,185 200,160
+             C220,145 225,115 205,95
+             C225,75 220,45 195,35
+             C185,10 155,10 140,30
+             C125,10 95,15 80,35"
+          fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    
+    <!-- Left hemisphere details -->
+    <path d="M50,60 C30,70 25,100 45,110" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/>
+    <path d="M25,125 C15,140 20,165 40,170" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/>
+    
+    <!-- Right hemisphere details -->
+    <path d="M155,60 C175,70 180,100 160,110" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/>
+    <path d="M190,125 C200,140 195,165 175,170" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/>
+    
+    <!-- Autism puzzle pieces inside brain -->
+    <!-- Puzzle piece 1 - top left -->
+    <path d="M65,55 
+             C65,45 75,45 75,55
+             L85,55
+             C85,45 95,45 95,55
+             L95,75
+             L75,75
+             L75,65
+             C65,65 65,75 65,75
+             Z" 
+          fill="#8D8AF0"/>
+    
+    <!-- Puzzle piece 2 - bottom left -->
+    <path d="M45,110 
+             C35,110 35,120 45,120
+             L45,130
+             C35,130 35,140 45,140
+             L65,140
+             L65,120
+             L55,120
+             C55,110 45,110 45,110
+             Z" 
+          fill="#98B9F2"/>
+    
+    <!-- Puzzle piece 3 - top right -->
+    <path d="M115,65 
+             C115,55 125,55 125,65
+             L135,65
+             C135,55 145,55 145,65
+             L145,85
+             L125,85
+             L125,75
+             C115,75 115,85 115,85
+             Z" 
+          fill="#6F9CEB"/>
+    
+    <!-- Puzzle piece 4 - bottom right -->
+    <path d="M135,130 
+             C135,120 145,120 145,130
+             L145,140
+             C135,140 135,150 145,150
+             L165,150
+             L165,130
+             L155,130
+             C155,120 145,120 145,120
+             Z" 
+          fill="#8D8AF0"/>
+    
+    <!-- Puzzle piece 5 - center -->
+    <path d="M95,95 
+             C95,85 105,85 105,95
+             L115,95
+             C115,85 125,85 125,95
+             L125,115
+             L105,115
+             L105,105
+             C95,105 95,115 95,115
+             Z" 
+          fill="#98B9F2"/>
+  </g>
+  
+  <!-- Outer ring -->
+  <circle cx="256" cy="256" r="240" fill="none" stroke="#8D8AF0" stroke-width="8"/>
+</svg> 
