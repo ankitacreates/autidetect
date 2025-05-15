@@ -1,18 +1,13 @@
 # AutiDetect App Logo
 
-This directory contains the SVG source files for the AutiDetect app logo and icon.
+This directory contains the app logos for the AutiDetect application.
 
 ## Logo Description
 
-The logo represents the concept of autism detection with:
-- A brain outline to symbolize cognitive and neural aspects
-- Autism puzzle pieces inside, representing the autism awareness symbol
-- App's color palette:
-  - Dark Blue: #141B41
-  - Medium Blue: #306BAC
-  - Light Blue: #6F9CEB
-  - Very Light Blue/Periwinkle: #98B9F2
-  - Lavender: #8D8AF0
+The current logo represents the concept of autism detection with:
+- A brain outline with puzzle pieces inside to symbolize autism awareness
+- Blue gradient color scheme
+- The puzzle piece pattern symbolizes autism awareness
 
 ## SVG to PNG Conversion
 
@@ -43,6 +38,7 @@ The icons are referenced in the pubspec.yaml file under the flutter_launcher_ico
 
 ## Assets Included
 
+- `brain_puzzle_logo.png` - PNG version of the logo for use in the app UI and app icon
 - `autidetect_logo.svg` - Vector logo for the application (better for scaling)
 - `autidetect_logo.png` - PNG version of the logo for use in the app UI
 - `autidetect_icon.svg` - Vector app icon in circular format (better for scaling)
@@ -54,7 +50,7 @@ The icons are referenced in the pubspec.yaml file under the flutter_launcher_ico
 
 ```dart
 // For using the logo in the app
-Image.asset('assets/images/autidetect_logo.png')
+Image.asset('assets/images/brain_puzzle_logo.png')
 
 // For using the icon in the app
 Image.asset('assets/images/autidetect_icon.png')
@@ -68,12 +64,11 @@ To set the application icon, you'll need to replace the default icon in:
 
 Follow Flutter's documentation for detailed instructions on setting app icons for different platforms.
 
-### Logo Design Elements
+## Logo Design Elements
 
 The logo incorporates:
-1. A stylized "A" representing "Auti" (Autism)
-2. A brain symbol representing cognitive assessment
-3. Connecting neural lines representing network/detection
-4. The AutiDetect name in the text version
+1. A brain outline symbolizing cognitive assessment and evaluation
+2. Puzzle pieces symbolizing autism awareness
+3. Blue gradient colors representing trust, calm, and reliability
 
 These elements symbolize the app's purpose of autism detection and support through modern technology. 

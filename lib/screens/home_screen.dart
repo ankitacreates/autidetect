@@ -4,10 +4,13 @@ import 'package:autidetect/constants/strings.dart';
 import 'package:autidetect/constants/routes.dart';
 import 'package:autidetect/widgets/custom_button.dart';
 import 'package:autidetect/widgets/custom_card.dart';
+import 'package:autidetect/widgets/custom_bottom_nav.dart';
 import 'package:autidetect/models/user_model.dart';
 import 'package:autidetect/models/assessment_model.dart';
+import 'package:autidetect/models/child_profile_model.dart';
 import 'package:autidetect/services/assessment_storage_service.dart';
 import 'package:intl/intl.dart';
+import 'package:autidetect/services/supabase_service.dart';
 
 // Home Screen following roadmap guidelines:
 // - Clean layout with clearly delineated sections
@@ -15,64 +18,153 @@ import 'package:intl/intl.dart';
 // - Clear text labels accompanying all icons
 // - Soft, muted color palette
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  User? _currentUser;
+  bool _isLoading = true;
+  List<ChildProfile> _childProfiles = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    try {
+      final user = await SupabaseService.getCurrentUser();
+      setState(() {
+        _currentUser = user;
+      });
+      
+      if (user != null && user.childProfileIds.isNotEmpty) {
+        final childProfiles = await SupabaseService.getChildProfiles(user.id);
+        setState(() {
+          _childProfiles = childProfiles;
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      print('Error loading user data: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text(AppStrings.appName),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.psychology,
+              size: 28,
+              color: AppColors.primaryDark,
+            ),
+            const SizedBox(width: 8),
+            Text(AppStrings.appName),
+          ],
+        ),
         centerTitle: true,
         elevation: 2,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              Navigator.pushNamed(context, AppRoutes.settings);
+          PopupMenuButton<String>(
+            onSelected: (value) async {
+              if (value == 'settings') {
+                Navigator.pushNamed(context, AppRoutes.settings);
+              } else if (value == 'logout') {
+                // Show confirmation dialog
+                final shouldLogout = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Logout'),
+                    content: const Text('Are you sure you want to logout?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('Cancel'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text('Logout'),
+                      ),
+                    ],
+                  ),
+                );
+                
+                if (shouldLogout == true) {
+                  // Perform logout
+                  await SupabaseService.signOut();
+                  // Navigate to welcome screen
+                  Navigator.pushNamedAndRemoveUntil(
+                    context, 
+                    AppRoutes.welcome,
+                    (route) => false,
+                  );
+                }
+              }
+            },
+            itemBuilder: (BuildContext context) {
+              return [
+                const PopupMenuItem<String>(
+                  value: 'settings',
+                  child: Row(
+                    children: [
+                      Icon(Icons.settings, color: AppColors.primaryDark),
+                      SizedBox(width: 8),
+                      Text('Settings'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem<String>(
+                  value: 'logout',
+                  child: Row(
+                    children: [
+                      Icon(Icons.logout, color: AppColors.primaryDark),
+                      SizedBox(width: 8),
+                      Text('Logout'),
+                    ],
+                  ),
+                ),
+              ];
             },
           ),
         ],
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildWelcomeSection(),
-              const SizedBox(height: 24),
-              _buildActionsSection(context),
-              const SizedBox(height: 24),
-              _buildRecentResultsSection(context),
-              const SizedBox(height: 24),
-              _buildResourcesSection(context),
-            ],
-          ),
-        ),
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildWelcomeSection(),
+                    const SizedBox(height: 24),
+                    _buildActionsSection(context),
+                    const SizedBox(height: 24),
+                    _buildRecentResultsSection(context),
+                    const SizedBox(height: 24),
+                    _buildResourcesSection(context),
+                  ],
+                ),
+              ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 0,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.assessment),
-            label: 'Assessments',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.bar_chart),
-            label: 'Results',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
-      ),
+      bottomNavigationBar: const CustomBottomNavBar(currentIndex: 0),
     );
   }
 
@@ -88,70 +180,115 @@ class HomeScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
-        const Text(
-          'Parent Name',
-          style: TextStyle(
+        Text(
+          _currentUser != null 
+              ? '${_currentUser!.firstName} ${_currentUser!.lastName}'
+              : 'Guest User',
+          style: const TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
             color: AppColors.textPrimary,
           ),
         ),
         const SizedBox(height: 16),
-        CustomCard(
-          backgroundColor: Colors.white,
-          elevation: 2,
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 24,
-                backgroundColor: AppColors.accent2,
-                child: const Text(
-                  'CN',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+        _childProfiles.isNotEmpty
+            ? CustomCard(
+                backgroundColor: Colors.white,
+                elevation: 2,
+                child: Row(
                   children: [
-                    Text(
-                      'Child Name',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
+                    CircleAvatar(
+                      radius: 24,
+                      backgroundColor: AppColors.accent2,
+                      child: Text(
+                        _getInitials(_childProfiles[0].name),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Age: 3 years',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppColors.textSecondary,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _childProfiles[0].name,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Age: ${_childProfiles[0].age} years',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
                       ),
+                    ),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.arrow_forward_ios,
+                        size: 16,
+                        color: AppColors.primary,
+                      ),
+                      onPressed: () {
+                        // Navigate to child profile
+                        Navigator.pushNamed(context, AppRoutes.childProfile);
+                      },
                     ),
                   ],
                 ),
-              ),
-              IconButton(
-                icon: const Icon(
-                  Icons.arrow_forward_ios,
-                  size: 16,
-                  color: AppColors.primary,
+              )
+            : CustomCard(
+                backgroundColor: Colors.white,
+                elevation: 2,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'No child profiles yet',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      CustomButton(
+                        text: 'Add Child Profile',
+                        backgroundColor: AppColors.primaryDark,
+                        onPressed: () {
+                          Navigator.pushNamed(context, AppRoutes.childProfile);
+                        },
+                      ),
+                    ],
+                  ),
                 ),
-                onPressed: () {
-                  // Navigate to child profile
-                },
               ),
-            ],
-          ),
-        ),
       ],
     );
+  }
+
+  String _getInitials(String name) {
+    if (name.isEmpty) return '';
+    
+    final nameParts = name.split(' ');
+    if (nameParts.length > 1) {
+      return '${nameParts[0][0]}${nameParts[1][0]}';
+    } else if (nameParts.length == 1) {
+      return nameParts[0][0];
+    }
+    
+    return '';
   }
 
   Widget _buildActionsSection(BuildContext context) {
@@ -637,6 +774,15 @@ class HomeScreen extends StatelessWidget {
                 elevation: 2,
                 onTap: () {
                   // Navigate to educational content
+                  Navigator.pushNamed(
+                    context, 
+                    AppRoutes.resources,
+                    arguments: 0, // Educational Content tab
+                  ).then((_) {
+                    setState(() {
+                      // Refresh data when returning from Resources screen
+                    });
+                  });
                 },
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -667,6 +813,15 @@ class HomeScreen extends StatelessWidget {
                 elevation: 2,
                 onTap: () {
                   // Navigate to developmental milestones
+                  Navigator.pushNamed(
+                    context, 
+                    AppRoutes.resources,
+                    arguments: 1, // Developmental Milestones tab
+                  ).then((_) {
+                    setState(() {
+                      // Refresh data when returning from Resources screen
+                    });
+                  });
                 },
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -701,6 +856,15 @@ class HomeScreen extends StatelessWidget {
                 elevation: 2,
                 onTap: () {
                   // Navigate to local services
+                  Navigator.pushNamed(
+                    context, 
+                    AppRoutes.resources,
+                    arguments: 2, // Local Services tab
+                  ).then((_) {
+                    setState(() {
+                      // Refresh data when returning from Resources screen
+                    });
+                  });
                 },
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -731,6 +895,15 @@ class HomeScreen extends StatelessWidget {
                 elevation: 2,
                 onTap: () {
                   // Navigate to FAQ
+                  Navigator.pushNamed(
+                    context, 
+                    AppRoutes.resources,
+                    arguments: 3, // FAQ tab
+                  ).then((_) {
+                    setState(() {
+                      // Refresh data when returning from Resources screen
+                    });
+                  });
                 },
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,

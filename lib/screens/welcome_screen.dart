@@ -31,9 +31,16 @@ class WelcomeScreen extends StatelessWidget {
                     Container(
                       width: 150,
                       height: 150,
-                      child: SvgPicture.asset(
-                        'assets/images/autidetect_logo.svg',
-                        fit: BoxFit.contain,
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryLight.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Icon(
+                          Icons.psychology,
+                          size: 80,
+                          color: AppColors.primaryDark,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -60,12 +67,36 @@ class WelcomeScreen extends StatelessWidget {
               const Spacer(flex: 1),
               // Action buttons
               CustomButton(
-                text: AppStrings.getStarted,
+                text: AppStrings.signup,
+                onPressed: () {
+                  Navigator.pushNamed(context, AppRoutes.signup);
+                },
+                icon: Icons.person_add,
+                backgroundColor: AppColors.primaryDark,
+              ),
+              const SizedBox(height: 16),
+              CustomButton(
+                text: AppStrings.login,
+                onPressed: () {
+                  Navigator.pushNamed(context, AppRoutes.login);
+                },
+                icon: Icons.login,
+                isOutlined: true,
+                backgroundColor: AppColors.primaryDark,
+                textColor: AppColors.primaryDark,
+              ),
+              const SizedBox(height: 16),
+              TextButton(
                 onPressed: () {
                   Navigator.pushNamed(context, AppRoutes.userTypeSelection);
                 },
-                icon: Icons.arrow_forward,
-                backgroundColor: AppColors.primaryDark,
+                child: Text(
+                  AppStrings.continueAsGuest,
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 16,
+                  ),
+                ),
               ),
               const SizedBox(height: 32),
             ],

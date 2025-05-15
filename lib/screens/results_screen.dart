@@ -102,8 +102,8 @@ class _ResultsScreenState extends State<ResultsScreen> {
         // Show error message
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to download report'),
+            const SnackBar(
+              content: Text('Failed to download report. Could not save file.'),
               backgroundColor: Colors.red,
             ),
           );
@@ -111,12 +111,25 @@ class _ResultsScreenState extends State<ResultsScreen> {
       }
     } catch (e) {
       print('Error downloading assessment: $e');
-      // Show error message
+      // Show detailed error message
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: $e'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Error generating PDF'),
+                Text(
+                  e.toString(),
+                  style: TextStyle(fontSize: 12),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
             backgroundColor: Colors.red,
+            duration: Duration(seconds: 5),
           ),
         );
       }
@@ -130,7 +143,24 @@ class _ResultsScreenState extends State<ResultsScreen> {
   // Open downloaded PDF
   void _openDownloadedPdf() {
     if (_downloadedFilePath != null) {
-      ExportService.openPdf(_downloadedFilePath!);
+      try {
+        ExportService.openPdf(_downloadedFilePath!);
+      } catch (e) {
+        print('Error opening PDF: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not open the file: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No file available to open'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -206,13 +236,23 @@ class _ResultsScreenState extends State<ResultsScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              AppStrings.assessmentResults,
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: AppColors.primaryDark,
-              ),
+            Row(
+              children: [
+                Icon(
+                  Icons.psychology,
+                  size: 32,
+                  color: AppColors.primaryDark,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  AppStrings.assessmentResults,
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primaryDark,
+                  ),
+                ),
+              ],
             ),
             // Status indicator
             if (_isSaving)
@@ -451,7 +491,11 @@ class _ResultsScreenState extends State<ResultsScreen> {
           'Understand typical childhood development and potential signs of autism.',
           Icons.menu_book,
           onTap: () {
-            Navigator.pushNamed(context, AppRoutes.resources);
+            Navigator.pushNamed(
+              context, 
+              AppRoutes.resources,
+              arguments: 1, // Developmental Milestones tab
+            );
           },
         ),
         const SizedBox(height: 12),
@@ -549,7 +593,11 @@ class _ResultsScreenState extends State<ResultsScreen> {
           text: AppStrings.findSpecialist,
           onPressed: () {
             // In a real app, this would show a map of specialists
-            Navigator.pushNamed(context, AppRoutes.resources);
+            Navigator.pushNamed(
+              context, 
+              AppRoutes.resources,
+              arguments: 0, // Educational Content tab
+            );
           },
           isOutlined: true,
           backgroundColor: AppColors.primaryDark,

@@ -4,6 +4,7 @@ import 'package:autidetect/constants/strings.dart';
 import 'package:autidetect/constants/routes.dart';
 import 'package:autidetect/widgets/custom_button.dart';
 import 'package:autidetect/widgets/custom_card.dart';
+import 'package:autidetect/widgets/custom_bottom_nav.dart';
 import 'package:autidetect/models/assessment_model.dart';
 
 // Assessment Selection Screen following roadmap guidelines:
@@ -68,6 +69,14 @@ class _AssessmentSelectionScreenState extends State<AssessmentSelectionScreen> {
                 description: 'For children between 3 and 12 years',
                 assessmentType: AssessmentType.child,
               ),
+              const SizedBox(height: 16),
+              _buildAssessmentOption(
+                title: 'Teen Assessment',
+                icon: Icons.person,
+                duration: '30-35',
+                description: 'For teenagers between 13 and 19 years',
+                assessmentType: AssessmentType.teen,
+              ),
               const Spacer(),
               CustomButton(
                 text: AppStrings.next,
@@ -103,6 +112,7 @@ class _AssessmentSelectionScreenState extends State<AssessmentSelectionScreen> {
           ),
         ),
       ),
+      bottomNavigationBar: const CustomBottomNavBar(currentIndex: 1),
     );
   }
 

@@ -5,6 +5,7 @@ import 'package:autidetect/constants/routes.dart';
 import 'package:autidetect/models/assessment_model.dart';
 import 'package:autidetect/services/assessment_storage_service.dart';
 import 'package:autidetect/widgets/custom_button.dart';
+import 'package:autidetect/widgets/custom_bottom_nav.dart';
 import 'package:intl/intl.dart';
 
 class AssessmentHistoryScreen extends StatefulWidget {
@@ -145,6 +146,7 @@ class _AssessmentHistoryScreenState extends State<AssessmentHistoryScreen> {
           : _assessments.isEmpty
               ? _buildEmptyState()
               : _buildAssessmentList(),
+      bottomNavigationBar: const CustomBottomNavBar(currentIndex: 2),
     );
   }
 
@@ -244,7 +246,9 @@ class _AssessmentHistoryScreenState extends State<AssessmentHistoryScreen> {
                     child: Text(
                       type == AssessmentType.toddler
                           ? 'Toddler Assessment'
-                          : 'Child Assessment',
+                          : type == AssessmentType.child
+                              ? 'Child Assessment'
+                              : 'Teen Assessment',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,

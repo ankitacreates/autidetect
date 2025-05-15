@@ -52,13 +52,23 @@ class SupabaseService {
     
     if (response.user != null) {
       // Create user profile in the database
-      await client.from('users').insert({
-        'id': response.user!.id,
-        'email': email,
-        'first_name': firstName,
-        'last_name': lastName,
-        'user_type': userType.toString().split('.').last,
-      });
+      try {
+        // First set the auth token to use the new user's credentials 
+        // This allows them to create their own profile with the correct RLS permissions
+        await client.from('users').insert({
+          'id': response.user!.id,
+          'email': email,
+          'first_name': firstName,
+          'last_name': lastName,
+          'user_type': userType.toString().split('.').last,
+        });
+        
+        print('User profile created successfully');
+      } catch (e) {
+        print('Error creating user profile: $e');
+        // Even if profile creation fails, we return the auth response
+        // The profile can be created later when the user logs in
+      }
     }
     
     return response;
@@ -68,10 +78,17 @@ class SupabaseService {
     required String email,
     required String password,
   }) async {
-    return await client.auth.signInWithPassword(
+    final response = await client.auth.signInWithPassword(
       email: email,
       password: password,
     );
+
+    if (response.user != null) {
+      // Ensure the user has a profile in the database
+      await getCurrentUser();
+    }
+    
+    return response;
   }
 
   static Future<void> signOut() async {
@@ -82,32 +99,66 @@ class SupabaseService {
     final authUser = client.auth.currentUser;
     if (authUser == null) return null;
 
-    final response = await client
-        .from('users')
-        .select('*, child_profiles:child_profiles(id)')
-        .eq('id', authUser.id)
-        .single();
+    try {
+      // Try to get the user profile
+      final response = await client
+          .from('users')
+          .select('*, child_profiles:child_profiles(id)')
+          .eq('id', authUser.id)
+          .maybeSingle();
 
-    if (response == null) return null;
+      // If user profile doesn't exist in the database, create it
+      if (response == null) {
+        // This can happen if signup failed to create the profile
+        // but the auth account was created successfully
+        final userData = authUser.userMetadata;
+        if (userData != null) {
+          // Create user profile from auth metadata
+          final userType = userData['userType'] as String? ?? 'parent';
+          final firstName = userData['firstName'] as String? ?? '';
+          final lastName = userData['lastName'] as String? ?? '';
+          
+          try {
+            await client.from('users').insert({
+              'id': authUser.id,
+              'email': authUser.email ?? '',
+              'first_name': firstName,
+              'last_name': lastName,
+              'user_type': userType,
+            });
+            
+            // Try to get the user again
+            return await getCurrentUser();
+          } catch (e) {
+            print('Error creating missing user profile: $e');
+            return null;
+          }
+        }
+        return null;
+      }
 
-    List<String> childProfileIds = [];
-    if (response['child_profiles'] != null) {
-      childProfileIds = (response['child_profiles'] as List)
-          .map((child) => child['id'] as String)
-          .toList();
+      List<String> childProfileIds = [];
+      if (response['child_profiles'] != null) {
+        childProfileIds = (response['child_profiles'] as List)
+            .map((child) => child['id'] as String)
+            .toList();
+      }
+
+      return app_models.User(
+        id: response['id'],
+        email: response['email'],
+        firstName: response['first_name'],
+        lastName: response['last_name'],
+        userType: app_models.UserType.values.firstWhere(
+          (type) => type.toString().split('.').last == response['user_type'],
+          orElse: () => app_models.UserType.parent,
+        ),
+        childProfileIds: childProfileIds,
+      );
+    } catch (e) {
+      print('Error getting current user: $e');
+      return null;
     }
-
-    return app_models.User(
-      id: response['id'],
-      email: response['email'],
-      firstName: response['first_name'],
-      lastName: response['last_name'],
-      userType: app_models.UserType.values.firstWhere(
-        (type) => type.toString().split('.').last == response['user_type'],
-        orElse: () => app_models.UserType.parent,
-      ),
-      childProfileIds: childProfileIds,
-    );
   }
 
   // Child Profile methods
@@ -305,5 +356,18 @@ class SupabaseService {
       'videoPath': data['video_path'],
       'questionnaireResponses': data['questionnaire_responses'],
     };
+  }
+
+  static Future<bool> updateUserType(String userId, app_models.UserType userType) async {
+    try {
+      await client.from('users').update({
+        'user_type': userType.toString().split('.').last
+      }).eq('id', userId);
+      
+      return true;
+    } catch (e) {
+      print('Error updating user type: $e');
+      return false;
+    }
   }
 } 

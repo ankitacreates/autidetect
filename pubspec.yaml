@@ -66,12 +66,14 @@ dev_dependencies:
   flutter_launcher_icons: ^0.13.1
 
 # Flutter Launcher Icons configuration
+# Disabled temporarily - uncomment and run 'flutter pub run flutter_launcher_icons' 
+# after uploading a proper logo.png file to assets/images/
 flutter_launcher_icons:
   android: "ic_launcher"
   ios: true
-  image_path: "assets/images/autidetect_icon.png"
+  image_path: "assets/images/logo.png"
   adaptive_icon_background: "#141B41" # Dark Blue
-  adaptive_icon_foreground: "assets/images/autidetect_icon.png"
+  adaptive_icon_foreground: "assets/images/logo.png"
   remove_alpha_ios: true
 
 # For information on the generic Dart part of this file, see the

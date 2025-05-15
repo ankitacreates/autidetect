@@ -22,6 +22,11 @@ ON public.users
 FOR UPDATE 
 USING (auth.uid() = id);
 
+CREATE POLICY "Users can insert their own profile"
+ON public.users
+FOR INSERT
+WITH CHECK (auth.uid() = id);
+
 -- Create child profiles table
 CREATE TABLE IF NOT EXISTS public.child_profiles (
     id UUID PRIMARY KEY,

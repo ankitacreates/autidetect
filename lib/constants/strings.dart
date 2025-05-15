@@ -14,6 +14,23 @@ class AppStrings {
   static const String getStarted = 'Get Started';
   static const String continueAsGuest = 'Continue as Guest';
   
+  // Authentication
+  static const String login = 'Login';
+  static const String signup = 'Sign Up';
+  static const String createAccount = 'Create Account';
+  static const String password = 'Password';
+  static const String confirmPassword = 'Confirm Password';
+  static const String forgotPassword = 'Forgot Password?';
+  static const String alreadyHaveAccount = 'Already have an account?';
+  static const String dontHaveAccount = 'Don\'t have an account?';
+  static const String loginToYourAccount = 'Login to Your Account';
+  static const String createYourAccount = 'Create Your Account';
+  static const String orContinueWith = 'Or continue with';
+  static const String passwordMustBe = 'Password must be at least 8 characters';
+  static const String passwordsDoNotMatch = 'Passwords do not match';
+  static const String emailInvalid = 'Please enter a valid email address';
+  static const String fieldRequired = 'This field is required';
+  
   // User type selection
   static const String selectUserType = 'I am a:';
   static const String parent = 'Parent';

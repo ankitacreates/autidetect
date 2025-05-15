@@ -1,6 +1,7 @@
 enum AssessmentType {
   toddler,
   child,
+  teen,
 }
 
 enum AssessmentStatus {

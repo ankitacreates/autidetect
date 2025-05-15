@@ -13,6 +13,7 @@ import 'package:cross_file/cross_file.dart';
 class ExportService {
   // Generate PDF from assessment data
   static Future<Uint8List> generateAssessmentPdf(Assessment assessment) async {
+    // Create PDF document
     final pdf = pw.Document();
     
     // Format date
@@ -25,34 +26,62 @@ class ExportService {
     final String likelihoodText = _getLikelihoodText(assessment);
     final PdfColor color = _getLikelihoodColor(assessment);
     
-    pdf.addPage(
-      pw.MultiPage(
-        pageFormat: PdfPageFormat.a4,
-        build: (pw.Context context) => [
-          _buildHeader(),
-          pw.SizedBox(height: 20),
-          _buildPatientInfo(assessment, dateString),
-          pw.SizedBox(height: 20),
-          _buildResultSection(assessment, likelihoodText, color),
-          pw.SizedBox(height: 20),
-          _buildExplanationSection(),
-          pw.SizedBox(height: 20),
-          _buildRecommendationsSection(),
-          pw.SizedBox(height: 30),
-          _buildDisclaimer(),
-        ],
-        footer: (context) => pw.Container(
-          alignment: pw.Alignment.centerRight,
-          margin: const pw.EdgeInsets.only(top: 20),
-          child: pw.Text(
-            'Page ${context.pageNumber} of ${context.pagesCount}',
-            style: const pw.TextStyle(
-              fontSize: 10,
+    try {
+      pdf.addPage(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4,
+          build: (pw.Context context) => [
+            _buildHeader(),
+            pw.SizedBox(height: 20),
+            _buildPatientInfo(assessment, dateString),
+            pw.SizedBox(height: 20),
+            _buildResultSection(assessment, likelihoodText, color),
+            pw.SizedBox(height: 20),
+            _buildExplanationSection(),
+            pw.SizedBox(height: 20),
+            _buildRecommendationsSection(),
+            pw.SizedBox(height: 30),
+            _buildDisclaimer(),
+          ],
+          footer: (context) => pw.Container(
+            alignment: pw.Alignment.centerRight,
+            margin: const pw.EdgeInsets.only(top: 20),
+            child: pw.Text(
+              'Page ${context.pageNumber} of ${context.pagesCount}',
+              style: const pw.TextStyle(
+                fontSize: 10,
+              ),
             ),
           ),
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      print('Error creating PDF: $e');
+      // Create a simple PDF if complex layout fails
+      pdf.addPage(
+        pw.Page(
+          build: (pw.Context context) {
+            return pw.Center(
+              child: pw.Column(
+                mainAxisAlignment: pw.MainAxisAlignment.center,
+                children: [
+                  pw.Text(
+                    'AutiDetect Assessment Report',
+                    style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
+                  ),
+                  pw.SizedBox(height: 20),
+                  pw.Text('Assessment ID: ${assessment.id}'),
+                  pw.Text('Date: $dateString'),
+                  pw.Text('Result: $likelihoodText'),
+                  if (assessment.qualityScore != null)
+                    pw.Text('Score: ${assessment.qualityScore}%'),
+                ],
+              ),
+            );
+          },
+        ),
+      );
+    }
     
     return pdf.save();
   }
@@ -72,14 +101,40 @@ class ExportService {
   
   // Get directory for exporting files
   static Future<Directory> _getExportDirectory() async {
-    final directory = await getApplicationDocumentsDirectory();
-    final exportDir = Directory('${directory.path}/autidetect_reports');
-    
-    if (!(await exportDir.exists())) {
-      await exportDir.create(recursive: true);
+    try {
+      final directory = await getApplicationDocumentsDirectory();
+      final exportDir = Directory('${directory.path}/autidetect_reports');
+      
+      if (!(await exportDir.exists())) {
+        await exportDir.create(recursive: true);
+      }
+      
+      return exportDir;
+    } catch (e) {
+      print('Error accessing documents directory: $e');
+      try {
+        // Fallback to temporary directory if documents directory is not available
+        final tempDir = await getTemporaryDirectory();
+        final exportDir = Directory('${tempDir.path}/autidetect_reports');
+        
+        if (!(await exportDir.exists())) {
+          await exportDir.create(recursive: true);
+        }
+        
+        return exportDir;
+      } catch (e2) {
+        // If all else fails, use application support directory
+        print('Error accessing temporary directory: $e2');
+        final appDir = await getApplicationSupportDirectory();
+        final exportDir = Directory('${appDir.path}/autidetect_reports');
+        
+        if (!(await exportDir.exists())) {
+          await exportDir.create(recursive: true);
+        }
+        
+        return exportDir;
+      }
     }
-    
-    return exportDir;
   }
   
   // Share PDF file
@@ -129,7 +184,9 @@ class ExportService {
   ) {
     String assessmentType = assessment.type == AssessmentType.toddler
         ? "Toddler Assessment (18-36 months)"
-        : "Child Assessment (3-12 years)";
+        : assessment.type == AssessmentType.child
+            ? "Child Assessment (3-12 years)"
+            : "Teen Assessment (13-19 years)";
         
     return pw.Container(
       padding: const pw.EdgeInsets.all(10),

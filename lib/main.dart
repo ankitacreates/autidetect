@@ -17,6 +17,10 @@ import 'package:autidetect/screens/chat_screen.dart';
 import 'package:autidetect/screens/child_profile_screen.dart';
 import 'package:autidetect/screens/parent_profile_screen.dart';
 import 'package:autidetect/screens/assessment_history_screen.dart';
+import 'package:autidetect/screens/settings_screen.dart';
+import 'package:autidetect/screens/login_screen.dart';
+import 'package:autidetect/screens/signup_screen.dart';
+import 'package:autidetect/screens/resources_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:autidetect/providers/chat_provider.dart';
 import 'package:autidetect/models/user_model.dart';
@@ -60,6 +64,8 @@ class MyApp extends StatelessWidget {
         routes: {
           AppRoutes.splash: (context) => const SplashScreen(),
           AppRoutes.welcome: (context) => const WelcomeScreen(),
+          AppRoutes.login: (context) => const LoginScreen(),
+          AppRoutes.signup: (context) => const SignupScreen(),
           AppRoutes.userTypeSelection: (context) => const UserTypeSelectionScreen(),
           AppRoutes.childProfile: (context) => const ChildProfileScreen(),
           AppRoutes.home: (context) => const HomeScreen(),
@@ -69,6 +75,7 @@ class MyApp extends StatelessWidget {
           AppRoutes.questionnaire: (context) => const QuestionnaireScreen(),
           AppRoutes.chat: (context) => const ChatScreen(),
           AppRoutes.assessmentHistory: (context) => const AssessmentHistoryScreen(),
+          AppRoutes.settings: (context) => const SettingsScreen(),
           // Additional routes would be added here
         },
         onGenerateRoute: (settings) {
@@ -95,6 +102,15 @@ class MyApp extends StatelessWidget {
             return MaterialPageRoute(
               builder: (context) => ResultsScreen(
                 assessment: assessment,
+              ),
+            );
+          }
+          
+          if (settings.name == AppRoutes.resources) {
+            final initialTabIndex = settings.arguments as int?;
+            return MaterialPageRoute(
+              builder: (context) => ResourcesScreen(
+                initialTabIndex: initialTabIndex ?? 0,
               ),
             );
           }

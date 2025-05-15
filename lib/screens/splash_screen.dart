@@ -3,6 +3,7 @@ import 'package:autidetect/constants/colors.dart';
 import 'package:autidetect/constants/routes.dart';
 import 'package:autidetect/constants/strings.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:autidetect/services/supabase_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);
@@ -41,16 +42,38 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     
     _controller.forward();
     
-    // Navigate to welcome screen after animation finishes
-    Future.delayed(const Duration(milliseconds: 2000), () {
-      Navigator.pushReplacementNamed(context, AppRoutes.welcome);
-    });
+    // Check if user is logged in and navigate accordingly
+    _checkAuthStatus();
   }
 
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
+  }
+
+  Future<void> _checkAuthStatus() async {
+    // Delay for minimum splash screen duration
+    await Future.delayed(const Duration(seconds: 2));
+    
+    if (!mounted) return;
+    
+    try {
+      final currentUser = await SupabaseService.getCurrentUser();
+      if (currentUser != null) {
+        // User is logged in, navigate to home
+        Navigator.pushReplacementNamed(context, AppRoutes.home);
+      } else {
+        // User is not logged in, navigate to welcome
+        Navigator.pushReplacementNamed(context, AppRoutes.welcome);
+      }
+    } catch (e) {
+      print('Error checking auth status: $e');
+      // Navigate to welcome screen if there's an error
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, AppRoutes.welcome);
+      }
+    }
   }
 
   @override
@@ -68,17 +91,22 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Logo
                     Container(
-                      width: 180,
-                      height: 180,
-                      child: SvgPicture.asset(
-                        'assets/images/autidetect_logo.svg',
-                        fit: BoxFit.contain,
+                      width: 150,
+                      height: 150,
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryLight.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Icon(
+                          Icons.psychology,
+                          size: 80,
+                          color: AppColors.primaryDark,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 24),
-                    // App name
                     Text(
                       AppStrings.appName,
                       style: const TextStyle(
@@ -88,14 +116,16 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                       ),
                     ),
                     const SizedBox(height: 8),
-                    // Tagline
                     Text(
                       AppStrings.appTagline,
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: 16,
                         color: AppColors.primary,
                       ),
-                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 48),
+                    const CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryDark),
                     ),
                   ],
                 ),

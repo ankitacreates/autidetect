@@ -4,6 +4,7 @@ import 'package:autidetect/constants/strings.dart';
 import 'package:autidetect/constants/routes.dart';
 import 'package:autidetect/widgets/custom_button.dart';
 import 'package:autidetect/widgets/custom_text_field.dart';
+import 'package:autidetect/widgets/custom_bottom_nav.dart';
 import 'package:autidetect/models/parent_profile_model.dart';
 import 'package:autidetect/models/user_model.dart';
 
@@ -220,6 +221,7 @@ class _ParentProfileScreenState extends State<ParentProfileScreen> {
           ),
         ),
       ),
+      bottomNavigationBar: const CustomBottomNavBar(currentIndex: 3),
     );
   }
 

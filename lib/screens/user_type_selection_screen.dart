@@ -5,6 +5,7 @@ import 'package:autidetect/constants/routes.dart';
 import 'package:autidetect/widgets/custom_button.dart';
 import 'package:autidetect/widgets/custom_card.dart';
 import 'package:autidetect/models/user_model.dart';
+import 'package:autidetect/services/supabase_service.dart';
 
 // User Type Selection Screen following roadmap guidelines:
 // - Clear options with both text and visual elements
@@ -20,7 +21,83 @@ class UserTypeSelectionScreen extends StatefulWidget {
 
 class _UserTypeSelectionScreenState extends State<UserTypeSelectionScreen> {
   UserType? _selectedUserType;
+  bool _isLoading = false;
 
+  @override
+  void initState() {
+    super.initState();
+    _checkCurrentUser();
+  }
+
+  Future<void> _checkCurrentUser() async {
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+      
+      final currentUser = await SupabaseService.getCurrentUser();
+      
+      if (currentUser != null) {
+        // If user is already logged in, set their user type
+        setState(() {
+          _selectedUserType = currentUser.userType;
+        });
+      }
+    } catch (e) {
+      print('Error getting current user: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _updateUserType() async {
+    if (_selectedUserType == null) return;
+    
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+      
+      final currentUser = await SupabaseService.getCurrentUser();
+      
+      if (currentUser != null && currentUser.userType != _selectedUserType) {
+        // Update user type if different from current
+        await SupabaseService.updateUserType(currentUser.id, _selectedUserType!);
+      }
+      
+      // Navigate based on user type
+      if (_selectedUserType == UserType.healthcareProfessional) {
+        // Healthcare professional goes straight to home
+        Navigator.pushReplacementNamed(context, AppRoutes.home);
+      } else {
+        // Parents and caregivers go to profile setup
+        Navigator.pushNamed(
+          context,
+          AppRoutes.parentProfile,
+          arguments: _selectedUserType,
+        );
+      }
+    } catch (e) {
+      print('Error updating user type: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -31,67 +108,59 @@ class _UserTypeSelectionScreenState extends State<UserTypeSelectionScreen> {
         elevation: 0,
         backgroundColor: AppColors.primaryDark,
       ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                AppStrings.selectUserType,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primaryDark,
+      body: _isLoading 
+          ? const Center(
+              child: CircularProgressIndicator(),
+            )
+          : SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      AppStrings.selectUserType,
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primaryDark,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    _buildUserTypeOption(
+                      title: AppStrings.parent,
+                      icon: Icons.family_restroom,
+                      description: 'You are a parent or guardian of a child',
+                      userType: UserType.parent,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildUserTypeOption(
+                      title: AppStrings.caregiver,
+                      icon: Icons.volunteer_activism,
+                      description: 'You are a caregiver for a child but not their parent',
+                      userType: UserType.caregiver,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildUserTypeOption(
+                      title: AppStrings.healthcareProfessional,
+                      icon: Icons.medical_services,
+                      description: 'You are a healthcare provider or specialist',
+                      userType: UserType.healthcareProfessional,
+                    ),
+                    const Spacer(),
+                    CustomButton(
+                      text: AppStrings.next,
+                      backgroundColor: AppColors.primaryDark,
+                      onPressed: _selectedUserType != null
+                          ? _updateUserType
+                          : null,
+                      icon: Icons.arrow_forward,
+                      isLoading: _isLoading,
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 24),
-              _buildUserTypeOption(
-                title: AppStrings.parent,
-                icon: Icons.family_restroom,
-                description: 'You are a parent or guardian of a child',
-                userType: UserType.parent,
-              ),
-              const SizedBox(height: 16),
-              _buildUserTypeOption(
-                title: AppStrings.caregiver,
-                icon: Icons.volunteer_activism,
-                description: 'You are a caregiver for a child but not their parent',
-                userType: UserType.caregiver,
-              ),
-              const SizedBox(height: 16),
-              _buildUserTypeOption(
-                title: AppStrings.healthcareProfessional,
-                icon: Icons.medical_services,
-                description: 'You are a healthcare provider or specialist',
-                userType: UserType.healthcareProfessional,
-              ),
-              const Spacer(),
-              CustomButton(
-                text: AppStrings.next,
-                backgroundColor: AppColors.primaryDark,
-                onPressed: _selectedUserType != null
-                    ? () {
-                        // First, determine where to navigate based on user type
-                        if (_selectedUserType == UserType.healthcareProfessional) {
-                          // Healthcare professional goes straight to home
-                          Navigator.pushNamed(context, AppRoutes.home);
-                        } else {
-                          // Parents and caregivers go to profile setup
-                          Navigator.pushNamed(
-                            context,
-                            AppRoutes.parentProfile,
-                            arguments: _selectedUserType,
-                          );
-                        }
-                      }
-                    : null,
-                icon: Icons.arrow_forward,
-              ),
-            ],
-          ),
-        ),
-      ),
+            ),
     );
   }
 
