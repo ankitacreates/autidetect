@@ -26,63 +26,25 @@ class ExportService {
     final String likelihoodText = _getLikelihoodText(assessment);
     final PdfColor color = _getLikelihoodColor(assessment);
     
-    try {
-      pdf.addPage(
-        pw.MultiPage(
-          pageFormat: PdfPageFormat.a4,
-          build: (pw.Context context) => [
-            _buildHeader(),
-            pw.SizedBox(height: 20),
-            _buildPatientInfo(assessment, dateString),
-            pw.SizedBox(height: 20),
-            _buildResultSection(assessment, likelihoodText, color),
-            pw.SizedBox(height: 20),
-            _buildExplanationSection(),
-            pw.SizedBox(height: 20),
-            _buildRecommendationsSection(),
-            pw.SizedBox(height: 30),
-            _buildDisclaimer(),
-          ],
-          footer: (context) => pw.Container(
-            alignment: pw.Alignment.centerRight,
-            margin: const pw.EdgeInsets.only(top: 20),
-            child: pw.Text(
-              'Page ${context.pageNumber} of ${context.pagesCount}',
-              style: const pw.TextStyle(
-                fontSize: 10,
-              ),
-            ),
-          ),
-        ),
-      );
-    } catch (e) {
-      print('Error creating PDF: $e');
-      // Create a simple PDF if complex layout fails
-      pdf.addPage(
-        pw.Page(
-          build: (pw.Context context) {
-            return pw.Center(
-              child: pw.Column(
-                mainAxisAlignment: pw.MainAxisAlignment.center,
-                children: [
-                  pw.Text(
-                    'AutiDetect Assessment Report',
-                    style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
-                  ),
-                  pw.SizedBox(height: 20),
-                  pw.Text('Assessment ID: ${assessment.id}'),
-                  pw.Text('Date: $dateString'),
-                  pw.Text('Result: $likelihoodText'),
-                  if (assessment.qualityScore != null)
-                    pw.Text('Score: ${assessment.qualityScore}%'),
-                ],
-              ),
-            );
-          },
-        ),
-      );
-    }
-    
+    // Add pages to the document
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(32),
+        build: (context) => [
+          _buildHeader(assessment, dateString),
+          pw.SizedBox(height: 20),
+          _buildResultSection(assessment, likelihoodText, color),
+          pw.SizedBox(height: 20),
+          _buildDetailedResults(assessment),
+          pw.SizedBox(height: 20),
+          _buildRecommendations(assessment),
+          pw.SizedBox(height: 20),
+          _buildDisclaimer(),
+        ],
+      ),
+    );
+
     return pdf.save();
   }
   
@@ -165,116 +127,106 @@ class ExportService {
   }
   
   // Helper methods for PDF generation
-  static pw.Widget _buildHeader() {
-    return pw.Header(
-      level: 0,
-      child: pw.Text(
-        'AutiDetect Assessment Report',
-        style: pw.TextStyle(
-          fontSize: 24,
-          fontWeight: pw.FontWeight.bold,
-        ),
-      ),
-    );
-  }
-  
-  static pw.Widget _buildPatientInfo(
-    Assessment assessment,
-    String dateString,
-  ) {
-    String assessmentType = assessment.type == AssessmentType.toddler
-        ? "Toddler Assessment (18-36 months)"
-        : assessment.type == AssessmentType.child
-            ? "Child Assessment (3-12 years)"
-            : "Teen Assessment (13-19 years)";
-        
-    return pw.Container(
-      padding: const pw.EdgeInsets.all(10),
-      decoration: pw.BoxDecoration(
-        color: PdfColors.grey100,
-        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(10)),
-      ),
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.Text(
-            'Assessment Information',
-            style: pw.TextStyle(
-              fontSize: 16,
-              fontWeight: pw.FontWeight.bold,
+  static pw.Widget _buildHeader(Assessment assessment, String dateString) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          children: [
+            pw.Text(
+              'AutiDetect Assessment Report',
+              style: pw.TextStyle(
+                fontSize: 24,
+                fontWeight: pw.FontWeight.bold,
+                color: PdfColors.blue900,
+              ),
             ),
-          ),
-          pw.SizedBox(height: 10),
-          pw.Row(
-            children: [
-              pw.Expanded(
-                child: pw.Text(
-                  'Assessment Date:',
-                  style: pw.TextStyle(
-                    fontSize: 12,
-                    fontWeight: pw.FontWeight.bold,
-                  ),
+            pw.Container(
+              padding: const pw.EdgeInsets.all(10),
+              decoration: pw.BoxDecoration(
+                color: PdfColors.blue50,
+                borderRadius: const pw.BorderRadius.all(pw.Radius.circular(5)),
+              ),
+              child: pw.Text(
+                dateString,
+                style: const pw.TextStyle(
+                  fontSize: 12,
+                  color: PdfColors.blue900,
                 ),
               ),
-              pw.Expanded(
-                flex: 2,
-                child: pw.Text(
-                  dateString,
-                  style: const pw.TextStyle(
-                    fontSize: 12,
-                  ),
+            ),
+          ],
+        ),
+        pw.SizedBox(height: 20),
+        pw.Container(
+          padding: const pw.EdgeInsets.all(15),
+          decoration: pw.BoxDecoration(
+            color: PdfColors.grey100,
+            borderRadius: const pw.BorderRadius.all(pw.Radius.circular(10)),
+          ),
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(
+                'Assessment Information',
+                style: pw.TextStyle(
+                  fontSize: 16,
+                  fontWeight: pw.FontWeight.bold,
                 ),
+              ),
+              pw.SizedBox(height: 10),
+              pw.Row(
+                children: [
+                  pw.Expanded(
+                    child: pw.Text(
+                      'Assessment Type:',
+                      style: pw.TextStyle(
+                        fontSize: 12,
+                        fontWeight: pw.FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  pw.Expanded(
+                    flex: 2,
+                    child: pw.Text(
+                      assessment.type == AssessmentType.toddler
+                          ? 'Toddler Assessment (18-36 months)'
+                          : 'Child Assessment (3-12 years)',
+                      style: const pw.TextStyle(
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              pw.SizedBox(height: 5),
+              pw.Row(
+                children: [
+                  pw.Expanded(
+                    child: pw.Text(
+                      'Assessment ID:',
+                      style: pw.TextStyle(
+                        fontSize: 12,
+                        fontWeight: pw.FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  pw.Expanded(
+                    flex: 2,
+                    child: pw.Text(
+                      assessment.id,
+                      style: const pw.TextStyle(
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-          pw.SizedBox(height: 5),
-          pw.Row(
-            children: [
-              pw.Expanded(
-                child: pw.Text(
-                  'Assessment Type:',
-                  style: pw.TextStyle(
-                    fontSize: 12,
-                    fontWeight: pw.FontWeight.bold,
-                  ),
-                ),
-              ),
-              pw.Expanded(
-                flex: 2,
-                child: pw.Text(
-                  assessmentType,
-                  style: const pw.TextStyle(
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          pw.SizedBox(height: 5),
-          pw.Row(
-            children: [
-              pw.Expanded(
-                child: pw.Text(
-                  'Assessment ID:',
-                  style: pw.TextStyle(
-                    fontSize: 12,
-                    fontWeight: pw.FontWeight.bold,
-                  ),
-                ),
-              ),
-              pw.Expanded(
-                flex: 2,
-                child: pw.Text(
-                  assessment.id,
-                  style: const pw.TextStyle(
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
   
@@ -379,42 +331,198 @@ class ExportService {
     );
   }
   
-  static pw.Widget _buildExplanationSection() {
+  static pw.Widget _buildDetailedResults(Assessment assessment) {
+    final responses = assessment.questionnaireResponses ?? [];
+    if (responses.isEmpty) return pw.SizedBox.shrink();
+
+    // Group responses by category
+    final Map<String, List<Map<String, dynamic>>> categorizedResponses = {};
+    for (var response in responses) {
+      final category = response['category'] as String? ?? 'General';
+      if (!categorizedResponses.containsKey(category)) {
+        categorizedResponses[category] = [];
+      }
+      categorizedResponses[category]!.add(response);
+    }
+
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text(
+          'Detailed Results',
+          style: pw.TextStyle(
+            fontSize: 18,
+            fontWeight: pw.FontWeight.bold,
+            color: PdfColors.blue900,
+          ),
+        ),
+        pw.SizedBox(height: 15),
+        ...categorizedResponses.entries.map((entry) {
+          final category = entry.key;
+          final categoryResponses = entry.value;
+          
+          // Calculate category score
+          int categoryScore = 0;
+          int totalQuestions = categoryResponses.length;
+          for (var response in categoryResponses) {
+            final score = response['score'] as int? ?? 0;
+            categoryScore += score;
+          }
+          final categoryPercentage = totalQuestions > 0 
+              ? (categoryScore / (totalQuestions * 3) * 100).round() 
+              : 0;
+
+          return pw.Container(
+            margin: const pw.EdgeInsets.only(bottom: 15),
+            padding: const pw.EdgeInsets.all(15),
+            decoration: pw.BoxDecoration(
+              border: pw.Border.all(color: PdfColors.grey300),
+              borderRadius: const pw.BorderRadius.all(pw.Radius.circular(10)),
+            ),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Expanded(
+                      child: pw.Text(
+                        category,
+                        style: pw.TextStyle(
+                          fontSize: 14,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    pw.Container(
+                      padding: const pw.EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: pw.BoxDecoration(
+                        color: _getCategoryColor(categoryPercentage).shade(50),
+                        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(15)),
+                      ),
+                      child: pw.Text(
+                        '$categoryPercentage%',
+                        style: pw.TextStyle(
+                          fontSize: 12,
+                          fontWeight: pw.FontWeight.bold,
+                          color: _getCategoryColor(categoryPercentage),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                pw.SizedBox(height: 10),
+                pw.Container(
+                  width: double.infinity,
+                  height: 8,
+                  decoration: pw.BoxDecoration(
+                    color: PdfColors.grey200,
+                    borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+                  ),
+                  child: pw.ClipRRect(
+                    horizontalRadius: 4,
+                    verticalRadius: 4,
+                    child: pw.Container(
+                      width: 500,
+                      decoration: pw.BoxDecoration(
+                        color: _getCategoryColor(categoryPercentage),
+                      ),
+                    ),
+                  ),
+                ),
+                pw.SizedBox(height: 15),
+                ...categoryResponses.map((response) {
+                  final question = response['question'] as String? ?? '';
+                  final answer = response['answer'] as String? ?? '';
+                  final score = response['score'] as int? ?? 0;
+
+                  return pw.Container(
+                    margin: const pw.EdgeInsets.only(bottom: 10),
+                    padding: const pw.EdgeInsets.all(10),
+                    decoration: pw.BoxDecoration(
+                      color: PdfColors.grey50,
+                      borderRadius: const pw.BorderRadius.all(pw.Radius.circular(5)),
+                    ),
+                    child: pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text(
+                          question,
+                          style: pw.TextStyle(
+                            fontSize: 11,
+                            fontWeight: pw.FontWeight.bold,
+                          ),
+                        ),
+                        pw.SizedBox(height: 5),
+                        pw.Row(
+                          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                          children: [
+                            pw.Text(
+                              'Response: $answer',
+                              style: const pw.TextStyle(
+                                fontSize: 10,
+                                color: PdfColors.grey700,
+                              ),
+                            ),
+                            pw.Container(
+                              padding: const pw.EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: pw.BoxDecoration(
+                                color: _getCategoryColor(score).shade(50),
+                                borderRadius: const pw.BorderRadius.all(pw.Radius.circular(10)),
+                              ),
+                              child: pw.Text(
+                                'Score: $score',
+                                style: pw.TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: pw.FontWeight.bold,
+                                  color: _getCategoryColor(score),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ],
+            ),
+          );
+        }).toList(),
+      ],
+    );
+  }
+  
+  static pw.Widget _buildRecommendations(Assessment assessment) {
     return pw.Container(
       padding: const pw.EdgeInsets.all(15),
       decoration: pw.BoxDecoration(
-        border: pw.Border.all(color: PdfColors.grey300),
+        color: PdfColors.blue50,
         borderRadius: const pw.BorderRadius.all(pw.Radius.circular(10)),
       ),
       child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
           pw.Text(
-            'What This Means',
+            'Recommendations',
             style: pw.TextStyle(
               fontSize: 16,
               fontWeight: pw.FontWeight.bold,
+              color: PdfColors.blue900,
             ),
           ),
           pw.SizedBox(height: 10),
-          pw.Bullet(
-            text: 'These results are based on your responses to the autism screening questionnaire.',
+          pw.Text(
+            _getRecommendations(assessment),
             style: const pw.TextStyle(
               fontSize: 11,
-            ),
-          ),
-          pw.SizedBox(height: 5),
-          pw.Bullet(
-            text: 'This is not a diagnosis. Only a qualified healthcare professional can diagnose autism.',
-            style: const pw.TextStyle(
-              fontSize: 11,
-            ),
-          ),
-          pw.SizedBox(height: 5),
-          pw.Bullet(
-            text: 'Early intervention can significantly improve outcomes for children with autism.',
-            style: const pw.TextStyle(
-              fontSize: 11,
+              color: PdfColors.grey800,
             ),
           ),
         ],
@@ -422,158 +530,46 @@ class ExportService {
     );
   }
   
-  static pw.Widget _buildRecommendationsSection() {
-    return pw.Container(
-      padding: const pw.EdgeInsets.all(15),
-      decoration: pw.BoxDecoration(
-        border: pw.Border.all(color: PdfColors.grey300),
-        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(10)),
-      ),
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.Text(
-            'Recommended Next Steps',
-            style: pw.TextStyle(
-              fontSize: 16,
-              fontWeight: pw.FontWeight.bold,
-            ),
-          ),
-          pw.SizedBox(height: 10),
-          pw.Row(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Container(
-                width: 24,
-                height: 24,
-                decoration: const pw.BoxDecoration(
-                  color: PdfColors.lightBlue100,
-                  shape: pw.BoxShape.circle,
-                ),
-                alignment: pw.Alignment.center,
-                child: pw.Text(
-                  '1',
-                  style: pw.TextStyle(
-                    fontSize: 14,
-                    fontWeight: pw.FontWeight.bold,
-                  ),
-                ),
-              ),
-              pw.SizedBox(width: 10),
-              pw.Expanded(
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Text(
-                      'Share these results with a healthcare professional',
-                      style: pw.TextStyle(
-                        fontSize: 12,
-                        fontWeight: pw.FontWeight.bold,
-                      ),
-                    ),
-                    pw.SizedBox(height: 2),
-                    pw.Text(
-                      'Discuss these screening results with your child\'s pediatrician or a developmental specialist.',
-                      style: const pw.TextStyle(
-                        fontSize: 10,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          pw.SizedBox(height: 10),
-          pw.Row(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Container(
-                width: 24,
-                height: 24,
-                decoration: const pw.BoxDecoration(
-                  color: PdfColors.lightBlue100,
-                  shape: pw.BoxShape.circle,
-                ),
-                alignment: pw.Alignment.center,
-                child: pw.Text(
-                  '2',
-                  style: pw.TextStyle(
-                    fontSize: 14,
-                    fontWeight: pw.FontWeight.bold,
-                  ),
-                ),
-              ),
-              pw.SizedBox(width: 10),
-              pw.Expanded(
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Text(
-                      'Learn more about developmental milestones',
-                      style: pw.TextStyle(
-                        fontSize: 12,
-                        fontWeight: pw.FontWeight.bold,
-                      ),
-                    ),
-                    pw.SizedBox(height: 2),
-                    pw.Text(
-                      'Understand typical childhood development and potential signs of autism.',
-                      style: const pw.TextStyle(
-                        fontSize: 10,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          pw.SizedBox(height: 10),
-          pw.Row(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Container(
-                width: 24,
-                height: 24,
-                decoration: const pw.BoxDecoration(
-                  color: PdfColors.lightBlue100,
-                  shape: pw.BoxShape.circle,
-                ),
-                alignment: pw.Alignment.center,
-                child: pw.Text(
-                  '3',
-                  style: pw.TextStyle(
-                    fontSize: 14,
-                    fontWeight: pw.FontWeight.bold,
-                  ),
-                ),
-              ),
-              pw.SizedBox(width: 10),
-              pw.Expanded(
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Text(
-                      'Schedule a follow-up assessment',
-                      style: pw.TextStyle(
-                        fontSize: 12,
-                        fontWeight: pw.FontWeight.bold,
-                      ),
-                    ),
-                    pw.SizedBox(height: 2),
-                    pw.Text(
-                      'Tracking development over time provides more accurate insights.',
-                      style: const pw.TextStyle(
-                        fontSize: 10,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
+  static String _getRecommendations(Assessment assessment) {
+    switch (assessment.likelihood) {
+      case AutismLikelihood.low:
+        return 'Based on the assessment results, there is a low likelihood of autism-related behaviors. However, it is recommended to:\n\n'
+            '• Continue monitoring your child\'s development\n'
+            '• Keep track of any changes in behavior or development\n'
+            '• Schedule regular check-ups with your pediatrician\n'
+            '• Share these results with your healthcare provider during your next visit';
+      
+      case AutismLikelihood.moderate:
+        return 'Based on the assessment results, there is a moderate likelihood of autism-related behaviors. We recommend:\n\n'
+            '• Schedule an appointment with a developmental specialist\n'
+            '• Share these results with your pediatrician\n'
+            '• Consider early intervention services\n'
+            '• Keep detailed records of your child\'s behaviors and development\n'
+            '• Learn more about autism spectrum disorder and available resources';
+      
+      case AutismLikelihood.high:
+        return 'Based on the assessment results, there is a high likelihood of autism-related behaviors. We strongly recommend:\n\n'
+            '• Schedule an immediate appointment with a developmental specialist\n'
+            '• Share these results with your pediatrician\n'
+            '• Begin early intervention services as soon as possible\n'
+            '• Document all behaviors and developmental milestones\n'
+            '• Connect with autism support groups and resources\n'
+            '• Consider a comprehensive developmental evaluation';
+      
+      case AutismLikelihood.unknown:
+      default:
+        return 'The assessment results were inconclusive. We recommend:\n\n'
+            '• Schedule a follow-up assessment\n'
+            '• Consult with your pediatrician\n'
+            '• Monitor your child\'s development closely\n'
+            '• Consider a comprehensive developmental evaluation';
+    }
+  }
+  
+  static PdfColor _getCategoryColor(int percentage) {
+    if (percentage >= 70) return PdfColors.red;
+    if (percentage >= 40) return PdfColors.orange;
+    return PdfColors.green;
   }
   
   static pw.Widget _buildDisclaimer() {

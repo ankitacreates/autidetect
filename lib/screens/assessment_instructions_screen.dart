@@ -4,10 +4,21 @@ import 'package:autidetect/constants/strings.dart';
 import 'package:autidetect/constants/routes.dart';
 import 'package:autidetect/widgets/custom_button.dart';
 import 'package:autidetect/models/assessment_model.dart';
+import 'package:autidetect/screens/schedule_assessment_screen.dart';
 
-class AssessmentInstructionsScreen extends StatelessWidget {
-  const AssessmentInstructionsScreen({Key? key}) : super(key: key);
+class AssessmentInstructionsScreen extends StatefulWidget {
+  final AssessmentType assessmentType;
 
+  const AssessmentInstructionsScreen({
+    Key? key,
+    required this.assessmentType,
+  }) : super(key: key);
+
+  @override
+  State<AssessmentInstructionsScreen> createState() => _AssessmentInstructionsScreenState();
+}
+
+class _AssessmentInstructionsScreenState extends State<AssessmentInstructionsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -98,8 +109,18 @@ class AssessmentInstructionsScreen extends StatelessWidget {
               const SizedBox(height: 16),
               CustomButton(
                 text: AppStrings.scheduleForLater,
-                onPressed: () {
-                  Navigator.pop(context);
+                onPressed: () async {
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ScheduleAssessmentScreen(
+                        assessmentType: widget.assessmentType,
+                      ),
+                    ),
+                  );
+                  if (result == true) {
+                    Navigator.pop(context);
+                  }
                 },
                 isOutlined: true,
                 backgroundColor: AppColors.primaryDark,
@@ -120,29 +141,18 @@ class AssessmentInstructionsScreen extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: AppColors.primaryLight.withOpacity(0.2),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            icon,
-            color: AppColors.primaryDark,
-            size: 20,
-          ),
+        Icon(
+          icon,
+          color: AppColors.primaryDark,
+          size: 24,
         ),
         const SizedBox(width: 16),
         Expanded(
-          child: Padding(
-            padding: const EdgeInsets.only(top: 8.0),
-            child: Text(
-              text,
-              style: TextStyle(
-                fontSize: 16,
-                color: AppColors.textPrimary,
-              ),
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: 16,
+              color: AppColors.textPrimary,
             ),
           ),
         ),

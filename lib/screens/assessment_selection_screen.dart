@@ -6,6 +6,7 @@ import 'package:autidetect/widgets/custom_button.dart';
 import 'package:autidetect/widgets/custom_card.dart';
 import 'package:autidetect/widgets/custom_bottom_nav.dart';
 import 'package:autidetect/models/assessment_model.dart';
+import 'package:autidetect/screens/schedule_assessment_screen.dart';
 
 // Assessment Selection Screen following roadmap guidelines:
 // - Clear visual indicators showing estimated completion time
@@ -88,6 +89,7 @@ class _AssessmentSelectionScreenState extends State<AssessmentSelectionScreen> {
                         Navigator.pushNamed(
                           context, 
                           AppRoutes.assessmentInstructions,
+                          arguments: _selectedAssessmentType,
                         );
                       }
                     : null,
@@ -97,10 +99,18 @@ class _AssessmentSelectionScreenState extends State<AssessmentSelectionScreen> {
               CustomButton(
                 text: AppStrings.scheduleForLater,
                 onPressed: _selectedAssessmentType != null
-                    ? () {
-                        // Schedule assessment for later logic
-                        // For demonstration purposes, just go back
-                        Navigator.pop(context);
+                    ? () async {
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ScheduleAssessmentScreen(
+                              assessmentType: _selectedAssessmentType!,
+                            ),
+                          ),
+                        );
+                        if (result == true) {
+                          Navigator.pop(context);
+                        }
                       }
                     : null,
                 isOutlined: true,

@@ -134,85 +134,90 @@ class _ChatScreenState extends State<ChatScreen> {
           if (!isUser) _buildAvatar(isUser),
           const SizedBox(width: 8),
           Flexible(
-            child: Column(
-              crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: isUser 
-                        ? AppColors.primaryDark
-                        : Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 5,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.75,
+              ),
+              child: Column(
+                crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: isUser 
+                          ? AppColors.primaryDark
+                          : Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 5,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: message.isLoading
+                        ? SizedBox(
+                            width: 40,
+                            height: 20,
+                            child: Center(
+                              child: LinearProgressIndicator(
+                                backgroundColor: AppColors.accent1.withOpacity(0.3),
+                                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryLight),
+                              ),
+                            ),
+                          )
+                        : isUser
+                            ? Text(
+                                message.content,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                ),
+                              )
+                            : MarkdownBody(
+                                data: message.content,
+                                styleSheet: MarkdownStyleSheet(
+                                  p: TextStyle(
+                                    color: AppColors.textPrimary,
+                                    fontSize: 16,
+                                  ),
+                                  h1: TextStyle(
+                                    color: AppColors.primaryDark,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  h2: TextStyle(
+                                    color: AppColors.primaryDark,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  h3: TextStyle(
+                                    color: AppColors.primary,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  a: TextStyle(
+                                    color: AppColors.accent2,
+                                  ),
+                                  listBullet: TextStyle(
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                              ),
                   ),
-                  child: message.isLoading
-                      ? SizedBox(
-                          width: 40,
-                          height: 20,
-                          child: Center(
-                            child: LinearProgressIndicator(
-                              backgroundColor: AppColors.accent1.withOpacity(0.3),
-                              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryLight),
-                            ),
-                          ),
-                        )
-                      : isUser
-                          ? Text(
-                              message.content,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                              ),
-                            )
-                          : MarkdownBody(
-                              data: message.content,
-                              styleSheet: MarkdownStyleSheet(
-                                p: TextStyle(
-                                  color: AppColors.textPrimary,
-                                  fontSize: 16,
-                                ),
-                                h1: TextStyle(
-                                  color: AppColors.primaryDark,
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                h2: TextStyle(
-                                  color: AppColors.primaryDark,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                h3: TextStyle(
-                                  color: AppColors.primary,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                a: TextStyle(
-                                  color: AppColors.accent2,
-                                ),
-                                listBullet: TextStyle(
-                                  color: AppColors.primary,
-                                ),
-                              ),
-                            ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 4.0, left: 4.0, right: 4.0),
-                  child: Text(
-                    _timeFormat.format(message.timestamp),
-                    style: TextStyle(
-                      color: AppColors.textLight,
-                      fontSize: 12,
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4.0, left: 4.0, right: 4.0),
+                    child: Text(
+                      _timeFormat.format(message.timestamp),
+                      style: TextStyle(
+                        color: AppColors.textLight,
+                        fontSize: 12,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           const SizedBox(width: 8),
@@ -249,58 +254,62 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
             ],
           ),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _messageController,
-                  decoration: InputDecoration(
-                    hintText: 'Ask a question...',
-                    filled: true,
-                    fillColor: Colors.grey.shade100,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide: BorderSide.none,
+          child: SafeArea(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _messageController,
+                    decoration: InputDecoration(
+                      hintText: 'Ask a question...',
+                      filled: true,
+                      fillColor: Colors.grey.shade100,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
+                    maxLines: 5,
+                    minLines: 1,
+                    textInputAction: TextInputAction.newline,
+                    enabled: !chatProvider.isLoading,
+                    onSubmitted: (value) {
+                      if (value.trim().isNotEmpty) {
+                        chatProvider.sendMessage(value);
+                        _messageController.clear();
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryDark,
+                    shape: BoxShape.circle,
+                  ),
+                  child: IconButton(
+                    icon: Icon(
+                      chatProvider.isLoading ? Icons.hourglass_top : Icons.send,
+                      color: Colors.white,
                     ),
+                    onPressed: chatProvider.isLoading
+                        ? null
+                        : () {
+                            final message = _messageController.text;
+                            if (message.trim().isNotEmpty) {
+                              chatProvider.sendMessage(message);
+                              _messageController.clear();
+                            }
+                          },
                   ),
-                  maxLines: null,
-                  textInputAction: TextInputAction.newline,
-                  enabled: !chatProvider.isLoading,
-                  onSubmitted: (value) {
-                    if (value.trim().isNotEmpty) {
-                      chatProvider.sendMessage(value);
-                      _messageController.clear();
-                    }
-                  },
                 ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                decoration: BoxDecoration(
-                  color: AppColors.primaryDark,
-                  shape: BoxShape.circle,
-                ),
-                child: IconButton(
-                  icon: Icon(
-                    chatProvider.isLoading ? Icons.hourglass_top : Icons.send,
-                    color: Colors.white,
-                  ),
-                  onPressed: chatProvider.isLoading
-                      ? null
-                      : () {
-                          final message = _messageController.text;
-                          if (message.trim().isNotEmpty) {
-                            chatProvider.sendMessage(message);
-                            _messageController.clear();
-                          }
-                        },
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },

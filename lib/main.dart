@@ -70,7 +70,6 @@ class MyApp extends StatelessWidget {
           AppRoutes.childProfile: (context) => const ChildProfileScreen(),
           AppRoutes.home: (context) => const HomeScreen(),
           AppRoutes.assessmentSelection: (context) => const AssessmentSelectionScreen(),
-          AppRoutes.assessmentInstructions: (context) => const AssessmentInstructionsScreen(),
           AppRoutes.videoCapture: (context) => const VideoCaptureScreen(),
           AppRoutes.questionnaire: (context) => const QuestionnaireScreen(),
           AppRoutes.chat: (context) => const ChatScreen(),
@@ -111,6 +110,15 @@ class MyApp extends StatelessWidget {
             return MaterialPageRoute(
               builder: (context) => ResourcesScreen(
                 initialTabIndex: initialTabIndex ?? 0,
+              ),
+            );
+          }
+          
+          if (settings.name == AppRoutes.assessmentInstructions) {
+            final assessmentType = settings.arguments as AssessmentType;
+            return MaterialPageRoute(
+              builder: (context) => AssessmentInstructionsScreen(
+                assessmentType: assessmentType,
               ),
             );
           }

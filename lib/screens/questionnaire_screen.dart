@@ -111,7 +111,19 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
       _questionnaireType
     );
     
-    // Create a mock assessment result
+    // Create a mock assessment result with enhanced response data
+    final enhancedResponses = _responses.map((response) {
+      final question = _questions.firstWhere((q) => q.id == response.questionId);
+      return {
+        'questionId': response.questionId,
+        'question': question.question,
+        'category': _getCategoryForQuestion(question),
+        'responseValue': response.responseValue,
+        'score': (3 - response.responseValue) * question.weight, // Convert response to score
+        'answer': _getAnswerText(response.responseValue),
+      };
+    }).toList();
+    
     final assessment = Assessment(
       id: _generateRandomId(),
       childProfileId: 'child1', // In a real app, use the actual child ID
@@ -123,7 +135,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
       completedAt: DateTime.now(),
       likelihood: _getLikelihoodFromRiskLevel(riskData['riskLevel']),
       qualityScore: riskData['percentage'],
-      questionnaireResponses: _responses.map((r) => r.toJson()).toList(),
+      questionnaireResponses: enhancedResponses,
     );
     
     // Navigate to processing screen
@@ -132,6 +144,43 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
       AppRoutes.processingResults,
       arguments: assessment,
     );
+  }
+
+  String _getCategoryForQuestion(AssessmentQuestion question) {
+    // Group questions into categories based on their content
+    if (question.question.toLowerCase().contains('eye contact') ||
+        question.question.toLowerCase().contains('look at you') ||
+        question.question.toLowerCase().contains('smile')) {
+      return 'Social Communication';
+    } else if (question.question.toLowerCase().contains('point') ||
+        question.question.toLowerCase().contains('pretend') ||
+        question.question.toLowerCase().contains('copy')) {
+      return 'Play & Interaction';
+    } else if (question.question.toLowerCase().contains('upset') ||
+        question.question.toLowerCase().contains('concern') ||
+        question.question.toLowerCase().contains('feelings')) {
+      return 'Emotional Response';
+    } else if (question.question.toLowerCase().contains('sound') ||
+        question.question.toLowerCase().contains('noise')) {
+      return 'Sensory Processing';
+    } else {
+      return 'General Development';
+    }
+  }
+
+  String _getAnswerText(int responseValue) {
+    switch (responseValue) {
+      case 0:
+        return AppStrings.mostly;
+      case 1:
+        return AppStrings.sometimes;
+      case 2:
+        return AppStrings.rarely;
+      case 3:
+        return AppStrings.never;
+      default:
+        return 'Not answered';
+    }
   }
 
   AutismLikelihood _getLikelihoodFromRiskLevel(String riskLevel) {

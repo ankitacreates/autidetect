@@ -21,9 +21,7 @@ class ResultsScreen extends StatefulWidget {
 
 class _ResultsScreenState extends State<ResultsScreen> {
   bool _isSaving = false;
-  bool _isDownloading = false;
   bool _resultsSaved = false;
-  String? _downloadedFilePath;
 
   @override
   void initState() {
@@ -53,136 +51,15 @@ class _ResultsScreenState extends State<ResultsScreen> {
     }
   }
 
-  // Download assessment as PDF
-  Future<void> _downloadAssessmentResults() async {
-    if (_downloadedFilePath != null) {
-      // If already downloaded, just open the file
-      _openDownloadedPdf();
-      return;
-    }
-
-    setState(() {
-      _isDownloading = true;
-    });
-
-    try {
-      // Convert datetime to string for filename
-      final dateStr = widget.assessment.completedAt != null
-          ? widget.assessment.completedAt!.toString().split(' ')[0]
-          : DateTime.now().toString().split(' ')[0];
-      
-      final fileName = 'AutiDetect_assessment_${widget.assessment.id}_$dateStr.pdf';
-      
-      // Generate PDF
-      final pdfBytes = await ExportService.generateAssessmentPdf(widget.assessment);
-      
-      // Save to file
-      final filePath = await ExportService.savePdfFile(pdfBytes, fileName);
-      
-      if (filePath.isNotEmpty) {
-        setState(() {
-          _downloadedFilePath = filePath;
-        });
-        
-        // Show success message
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Report downloaded successfully!'),
-              backgroundColor: Colors.green,
-              action: SnackBarAction(
-                label: 'OPEN',
-                textColor: Colors.white,
-                onPressed: _openDownloadedPdf,
-              ),
-            ),
-          );
-        }
-      } else {
-        // Show error message
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Failed to download report. Could not save file.'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      print('Error downloading assessment: $e');
-      // Show detailed error message
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Error generating PDF'),
-                Text(
-                  e.toString(),
-                  style: TextStyle(fontSize: 12),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 5),
-          ),
-        );
-      }
-    } finally {
-      setState(() {
-        _isDownloading = false;
-      });
-    }
-  }
-
-  // Open downloaded PDF
-  void _openDownloadedPdf() {
-    if (_downloadedFilePath != null) {
-      try {
-        ExportService.openPdf(_downloadedFilePath!);
-      } catch (e) {
-        print('Error opening PDF: $e');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Could not open the file: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No file available to open'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
   // Share PDF file
   void _shareAssessmentResults() {
-    if (_downloadedFilePath == null) {
-      // Need to download first
-      _downloadAssessmentResults().then((_) {
-        if (_downloadedFilePath != null) {
-          _sharePdf();
-        }
-      });
-    } else {
-      _sharePdf();
-    }
-  }
-
-  void _sharePdf() {
-    if (_downloadedFilePath != null) {
-      final subject = 'AutiDetect Assessment Report - ${_formatDate(widget.assessment.completedAt)}';
-      ExportService.sharePdf(_downloadedFilePath!, subject);
-    }
+    // In a real app, this would share the assessment results
+    // For now, we'll just navigate to the resources screen
+    Navigator.pushNamed(
+      context, 
+      AppRoutes.resources,
+      arguments: 0, // Educational Content tab
+    );
   }
 
   // Simple date formatter function
@@ -338,6 +215,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
         ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -399,9 +277,184 @@ class _ResultsScreenState extends State<ResultsScreen> {
               color: AppColors.textPrimary,
             ),
           ),
+          const SizedBox(height: 24),
+          _buildDetailedResults(),
         ],
       ),
     );
+  }
+
+  Widget _buildDetailedResults() {
+    final responses = widget.assessment.questionnaireResponses ?? [];
+    if (responses.isEmpty) return const SizedBox.shrink();
+
+    // Group responses by category
+    final Map<String, List<Map<String, dynamic>>> categorizedResponses = {};
+    for (var response in responses) {
+      final category = response['category'] as String? ?? 'General';
+      if (!categorizedResponses.containsKey(category)) {
+        categorizedResponses[category] = [];
+      }
+      categorizedResponses[category]!.add(response);
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Detailed Results',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 16),
+        ...categorizedResponses.entries.map((entry) {
+          final category = entry.key;
+          final categoryResponses = entry.value;
+          
+          // Calculate category score
+          int categoryScore = 0;
+          int totalQuestions = categoryResponses.length;
+          for (var response in categoryResponses) {
+            final score = response['score'] as int? ?? 0;
+            categoryScore += score;
+          }
+          final categoryPercentage = totalQuestions > 0 
+              ? (categoryScore / (totalQuestions * 3) * 100).round() 
+              : 0;
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: AppColors.primaryLight.withOpacity(0.3),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        category,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _getCategoryColor(categoryPercentage).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '$categoryPercentage%',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: _getCategoryColor(categoryPercentage),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                LinearProgressIndicator(
+                  value: categoryPercentage / 100,
+                  backgroundColor: AppColors.primaryLight.withOpacity(0.2),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    _getCategoryColor(categoryPercentage),
+                  ),
+                  minHeight: 6,
+                  borderRadius: BorderRadius.circular(3),
+                ),
+                const SizedBox(height: 16),
+                ...categoryResponses.map((response) {
+                  final question = response['question'] as String? ?? '';
+                  final answer = response['answer'] as String? ?? '';
+                  final score = response['score'] as int? ?? 0;
+                  
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: AppColors.border.withOpacity(0.5),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          question,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Response: $answer',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: _getCategoryColor(score).withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                'Score: $score',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: _getCategoryColor(score),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ],
+            ),
+          );
+        }).toList(),
+      ],
+    );
+  }
+
+  Color _getCategoryColor(int percentage) {
+    if (percentage >= 70) return Colors.red;
+    if (percentage >= 40) return Colors.orange;
+    return Colors.green;
   }
 
   Widget _buildWhatThisMeansSection() {
@@ -581,14 +634,6 @@ class _ResultsScreenState extends State<ResultsScreen> {
   Widget _buildActionButtons(BuildContext context) {
     return Column(
       children: [
-        CustomButton(
-          text: AppStrings.downloadResults,
-          backgroundColor: AppColors.primaryDark,
-          onPressed: _isDownloading ? null : _downloadAssessmentResults,
-          icon: _isDownloading ? null : Icons.download,
-          isLoading: _isDownloading,
-        ),
-        const SizedBox(height: 16),
         CustomButton(
           text: AppStrings.findSpecialist,
           onPressed: () {
